@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Practicalmachinelearning by betsyapp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Practicalmachinelearning</h1>
+      <h2 class="project-tagline"></h2>
+      <a href="https://github.com/betsyapp/PracticalMachineLearning" class="btn">View on GitHub</a>
+      <a href="https://github.com/betsyapp/PracticalMachineLearning/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/betsyapp/PracticalMachineLearning/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="practical-machine-learning--final-project-write-up" class="anchor" href="#practical-machine-learning--final-project-write-up" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Practical Machine Learning – Final Project Write-Up</h1>
+
+<p>Files associated with this project are in my github repository here: <a href="https://github.com/betsyapp/PracticalMachineLearning.git">https://github.com/betsyapp/PracticalMachineLearning.git</a></p>
+
+<p>The goal of this project was to develop an algorithm to predict how well participants perform a particular physical activity using information about how the activity was executed. Specifically, the aim was to predict how well participants executed barbell lifts using data from accelerometers on the belt, forearm, arm, and dumbbell. There were five possible outcomes: the lift was performed exactly according to the specification (Class A), the participant threw his or her elbows to the front (Class B), the participant lifted the dumbbell only halfway (Class C), the participant lowered the dumbbell only halfway (Class D,) and and the participant threw his or her hips to the front (Class E).</p>
+
+<p><strong>Data Exploration &amp; Cleaning</strong>
+Two sets of data were made available for this project: a training set consisting of 160 variables and 19,622 cases and a test set consisting of the same variables but only 20 cases.  (See <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a> for more information about the data and how they were obtained.)</p>
+
+<p>First, I read the training data and noted several missing values on many of the predictor variables.</p>
+
+<p><code>#read and examine training and test data</code>
+<code>mydata &lt;-read.csv("~/pml-training.csv")</code>
+<code>dim(mydata)</code>
+<code>View(mydata)</code></p>
+
+<p>I removed variables that had one or more missing values in the training set, and I removed variables that were neither physical parameters to use for prediction nor the outcome variable I wanted to predict (the “classe” of the activity—A, B, C, D, or E). I performed the same manipulations on the test set so it would mirror the training set.</p>
+
+<p><code>mydata &lt;- mydata[c(2:11,37:49,60:68,84:86,102,113:124,140,151:160)]</code>
+<code>testdata &lt;- testdata[c(2:11,37:49,60:68,84:86,102,113:124,140,151:160)]</code>
+<code>mydata &lt;- mydata[-c(1:6)]</code>
+<code>testdata &lt;- testdata[-c(1:6)]</code></p>
+
+<p>I reviewed the structure of the training data and determined I could move forward with developing a prediction algorithm.</p>
+
+<p><code>str(mydata)</code></p>
+
+<p>My final training and testing sets comprised 52 predictors and 1 outcome variable (“classe”)</p>
+
+<p><strong>Data Partitioning</strong>
+Next, I separated the training data into two parts: a training set and a hold-out sample to test the algorithm built using the training set. I randomly assigned three-quarters of the training data to be the training set and the remaining quarter to be the test set.</p>
+
+<p><code>#create training and testing data frames</code>
+<code>set.seed(814)</code>
+<code>inTrain &lt;- createDataPartition(y=mydata$classe,p=.75,list=FALSE)</code>
+<code>training &lt;- mydata[inTrain,]</code>
+<code>testing &lt;- mydata[-inTrain,]</code></p>
+
+<p>The training set comprised 14,718 cases while the test set comprised 4,904.</p>
+
+<p><strong>Model Construction &amp; Results</strong>
+In my first attempt, I used linear discriminant analysis with 5-fold cross-validation in my first attempt to develop an algorithm that would accurately classify cases into the five possible “classe” categories. I used LDA because this is an analytic approach with which my colleagues are familiar.</p>
+
+<p><code>#fit linear discriminant analysis</code>
+<code>library(caret)</code>
+<code>mycontrol &lt;- trainControl(method="cv", number=5, allowParallel=TRUE, verbose=TRUE)</code>
+<code>modFitlda &lt;- train(classe ~ .,method="lda",data=training, trControl=mycontrol, verbose=FALSE)</code></p>
+
+<p>The train function was executed very quickly. However, accuracy suffered substantially.</p>
+
+<pre><code>`modFitlda`
+</code></pre>
+
+<p><code>Linear Discriminant Analysis</code></p>
+
+<p><code>14718 samples</code>
+   <code>52 predictor</code>
+    <code>5 classes: 'A', 'B', 'C', 'D', 'E'</code></p>
+
+<p><code>No pre-processing</code>
+<code>Resampling: Cross-Validated (5 fold)</code>
+<code>Summary of sample sizes: 11775, 11773, 11776, 11772, 11776</code>
+<code>Resampling results</code></p>
+
+<p><code>Accuracy   Kappa     Accuracy SD  Kappa SD</code>
+  <code>0.6996201  0.619922  0.005049872  0.006399358</code></p>
+
+<p>Within the training set, accuracy was less than 70%. When applied to the test set, accuracy was even lower at 71% (see confusion matrix below).</p>
+
+<p>predlda    A    B    C    D    E</p>
+
+<p>A 1158  132   84   61   30</p>
+
+<p>B   37  620   74   28  159</p>
+
+<p>C   97  116  574   84   79</p>
+
+<p>D   97   32   99  603   98</p>
+
+<p>E    6   49   24   28  535</p>
+
+<p><code>Due to low accuracy, I decided to implement random forest instead, again using 5-fold cross-validation in an effort to avoid overfitting.</code></p>
+
+<p><code>modFitrf &lt;- train(classe ~ .,method="rf",data=training,trControl=mycontrol, verbose=FALSE)</code>
+<code>Random Forest</code></p>
+
+<p><code>14718 samples</code>
+   <code>52 predictor</code>
+    <code>5 classes: 'A', 'B', 'C', 'D', 'E'</code></p>
+
+<p><code>No pre-processing</code>
+<code>Resampling: Cross-Validated (5 fold)</code>
+<code>Summary of sample sizes: 11775, 11773, 11776, 11772, 11776</code>
+<code>Resampling results across tuning parameters:</code></p>
+
+<p><code>mtry  Accuracy   Kappa      Accuracy SD  Kappa SD</code>
+   <code>2    0.9924571  0.9904581  0.002573112  0.003255982</code>
+  <code>27    0.9921179  0.9900289  0.002249167  0.002845970</code>
+  <code>52    0.9845767  0.9804874  0.002004701  0.002535956</code></p>
+
+<p><code>Accuracy was used to select the optimal model using  the largest value.</code>
+<code>The final value used for the model was mtry = 2.</code></p>
+
+<p>This approach proved much more accurate than my initial attempt with LDA, with zero classification errors in training.</p>
+
+<p>predrf    A    B    C    D    E</p>
+
+<p>A 4185    0    0    0    0</p>
+
+<p>B    0 2848    0    0    0</p>
+
+<p>C    0    0 2567    0    0</p>
+
+<p>D    0    0    0 2412    0</p>
+
+<p>E    0    0    0    0 270</p>
+
+<p>When I applied the model to the test set, accuracy was still extremely high at 99%.</p>
+
+<p>predrf    A    B    C    D    E</p>
+
+<p>A 1395    5    0    0    0</p>
+
+<p>B    0  942    7    0    0</p>
+
+<p>C    0    2  848   15    1</p>
+
+<p>D    0    0    0  788    3</p>
+
+<p>E    0    0    0    1  897</p>
+
+<p>The confusion matrix shows there were only 32 classification errors of the total 4,904 cases in the test set.
+In sum, the final model built using random forest with 5-fold cross-validation was highly accurate with an expected out-of-sample error rate of less than 5%, which justified the cost in terms of speed.</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/betsyapp/PracticalMachineLearning">Practicalmachinelearning</a> is maintained by <a href="https://github.com/betsyapp">betsyapp</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>

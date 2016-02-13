@@ -92,6 +92,7 @@ Due to low accuracy, I decided to implement random forest instead, again using 5
 	The final value used for the model was mtry = 2. 
 
 This approach proved much more accurate than my initial attempt with LDA, with zero classification errors in training.
+
 	predrf    A    B    C    D    E
      	A 4185    0    0    0    0
      	B    0 2848    0    0    0
@@ -100,6 +101,7 @@ This approach proved much more accurate than my initial attempt with LDA, with z
      	E    0    0    0    0 270
 
 When I applied the model to the test set, accuracy was still extremely high at 99%.
+
 	predrf    A    B    C    D    E
      	A 1395    5    0    0    0
      	B    0  942    7    0    0
